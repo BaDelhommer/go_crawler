@@ -8,39 +8,36 @@ import (
 	"golang.org/x/net/html"
 )
 
-func getURLsfromHTML(htmlBody, rawBaseURL string) ([]string, error) {
-	urls := []string{}
-	doc, err := html.Parse(strings.NewReader(htmlBody))
+func getURLsfromHTML(htmlBody string, baseURL *url.URL) ([]string, error) {
+	htmlReader := strings.NewReader(htmlBody)
+	doc, err := html.Parse(htmlReader)
 	if err != nil {
-		return []string{}, err
+		return nil, fmt.Errorf("couldn't parse HTML: %v", err)
 	}
 
-	var f func(*html.Node) ([]string, error)
-	f = func(n *html.Node) ([]string, error) {
-		if n.Type == html.ElementNode && n.Data == "a" {
-			for _, a := range n.Attr {
-				if a.Key == "href" {
-					parsedURL, err := url.Parse(a.Val)
+	var urls []string
+	var traverseNodes func(*html.Node)
+	traverseNodes = func(node *html.Node) {
+		if node.Type == html.ElementNode && node.Data == "a" {
+			for _, anchor := range node.Attr {
+				if anchor.Key == "href" {
+					href, err := url.Parse(anchor.Val)
 					if err != nil {
-						fmt.Printf("error parsing urls: %v", err)
+						fmt.Printf("couldn't parse href '%v': %v\n", anchor.Val, err)
+						continue
 					}
 
-					if !parsedURL.IsAbs() {
-						joinedURL, err := url.JoinPath(rawBaseURL, parsedURL.String())
-						if err != nil {
-							fmt.Println("error joining urls: ", err)
-						}
-						urls = append(urls, joinedURL)
-					} else {
-						urls = append(urls, parsedURL.String()+"/")
-					}
+					resolvedURL := baseURL.ResolveReference(href)
+					urls = append(urls, resolvedURL.String())
 				}
 			}
 		}
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			f(c)
+
+		for child := node.FirstChild; child != nil; child = child.NextSibling {
+			traverseNodes(child)
 		}
-		return urls, nil
 	}
-	return f(doc)
+	traverseNodes(doc)
+
+	return urls, nil
 }

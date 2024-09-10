@@ -1,16 +1,22 @@
 package main
 
 import (
+	"fmt"
+	"net/url"
 	"reflect"
 	"testing"
 )
 
 func TestGetURLsFromHTML(t *testing.T) {
-	baseURL := "https://boot.dev"
+	baseURL, err := url.Parse("https://boot.dev")
+	if err != nil {
+		fmt.Println("Couldn't parse url")
+		return
+	}
 	tests := []struct {
 		name       string
 		sampleHTML string
-		baseURL    string
+		baseURL    *url.URL
 		expected   []string
 	}{
 		{
