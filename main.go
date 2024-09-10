@@ -3,26 +3,31 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 )
 
 func main() {
-	args := os.Args
-	var baseURL string
-	switch {
-	case len(args) < 2:
-		fmt.Println("no website provided")
+	if len(os.Args) > 4 {
+		fmt.Printf("Too many arguments %v", len(os.Args))
 		os.Exit(1)
-	case len(args) > 2:
-		fmt.Println("too many arguments provided")
-		os.Exit(1)
-	default:
-		baseURL = args[1]
-		fmt.Println("starting crawl of: ", baseURL)
 	}
 
-	const maxConcurrency = 3
+	if len(os.Args) < 4 {
+		fmt.Printf("Too few arguments %v", len(os.Args))
+		os.Exit(1)
+	}
 
-	cfg, err := configure(baseURL, maxConcurrency)
+	baseURL := os.Args[1]
+	maxConcurrency, err := strconv.Atoi(os.Args[2])
+	if err != nil {
+		fmt.Printf("Argument 2 must be int, got %v", err)
+	}
+	maxPages, err := strconv.Atoi(os.Args[3])
+	if err != nil {
+		fmt.Printf("Argument 3 must be int, got %v", err)
+	}
+
+	cfg, err := configure(baseURL, maxConcurrency, maxPages)
 	if err != nil {
 		fmt.Printf("error configure: %v", err)
 		return
