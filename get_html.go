@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 )
 
 func getHtml(rawURL string) (string, error) {
@@ -17,10 +18,9 @@ func getHtml(rawURL string) (string, error) {
 		return "", errors.New(resp.Status)
 	}
 
-	if val, ok := resp.Header["Content-Type"]; ok {
-		if val[0] != "text/html" {
-			return "", fmt.Errorf("wrong content type: %v", val[0])
-		}
+	contentType := resp.Header.Get("Content-Type")
+	if !strings.Contains(contentType, "text/html") {
+		return "", fmt.Errorf("wrong content type: %s", contentType)
 	}
 
 	docBytes, err := io.ReadAll(resp.Body)
